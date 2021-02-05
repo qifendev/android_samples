@@ -21,6 +21,8 @@ public class MainActivity extends AppCompatActivity {
         TextView tv = findViewById(R.id.sample_text);
         tv.setText(stringFromJNI());
 
+        new Test().test();
+
     }
 
     /**
