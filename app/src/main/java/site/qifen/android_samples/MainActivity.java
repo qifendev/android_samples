@@ -1,9 +1,12 @@
 package site.qifen.android_samples;
 
+import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
 
 import android.os.Bundle;
 import android.widget.TextView;
+
 
 public class MainActivity extends AppCompatActivity {
 
@@ -21,6 +24,8 @@ public class MainActivity extends AppCompatActivity {
         TextView tv = findViewById(R.id.sample_text);
         tv.setText(stringFromJNI());
 
+        StringBuilder stringBuffer = new StringBuilder();
+        stringBuffer.append("aadjaksJD");
     }
 
     /**
@@ -28,4 +33,5 @@ public class MainActivity extends AppCompatActivity {
      * which is packaged with this application.
      */
     public native String stringFromJNI();
+
 }
