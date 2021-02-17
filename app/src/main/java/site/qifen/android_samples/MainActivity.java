@@ -86,6 +86,9 @@ public class MainActivity extends AppCompatActivity {
         contentResolver = getContentResolver();
 
 
+
+
+
         //申请权限
         ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.READ_SMS, Manifest.permission.RECEIVE_MMS, Manifest.permission.RECEIVE_MMS}, 1);
 
@@ -112,10 +115,32 @@ public class MainActivity extends AppCompatActivity {
                 });
 
 
+        findViewById(R.id.per).setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                toSelfSetting(MainActivity.this);
+            }
+        });
+
+
         registerReceiver(new AutoMessageReceiver(), new IntentFilter("android.provider.Telephony.SMS_RECEIVED")); //注册广播
 
 
     }
+
+
+
+
+    //跳转到设置
+    public static void toSelfSetting(Context context) {
+        Intent mIntent = new Intent();
+        mIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+        mIntent.setAction("android.settings.APPLICATION_DETAILS_SETTINGS");
+        mIntent.setData(Uri.fromParts("package", context.getPackageName(), null));
+        context.startActivity(mIntent);
+    }
+
+
 
     @Override
     protected void onDestroy() {
