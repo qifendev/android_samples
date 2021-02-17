@@ -1,5 +1,6 @@
 package site.qifen.android_samples;
 
+import androidx.annotation.NonNull;
 import androidx.annotation.RequiresApi;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.app.ActivityCompat;
@@ -12,6 +13,9 @@ import android.graphics.BitmapFactory;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.Looper;
+import android.os.Message;
 import android.view.View;
 import android.widget.ArrayAdapter;
 import android.widget.ListView;
@@ -29,10 +33,36 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class MainActivity extends AppCompatActivity {
-    private ContentResolver contentResolver;
+    public ContentResolver contentResolver;
     int num = 0;
 
-    @RequiresApi(api = Build.VERSION_CODES.N)
+
+    Handler handler = new Handler(Looper.getMainLooper()){
+        @Override
+        public void handleMessage(@NonNull Message msg) {
+            switch (msg.what) {
+                case 1:
+                    List<Msg> mmsAndSMS = (List<Msg>) msg.obj;
+                    String[] strings = null;
+                    if (mmsAndSMS != null && !mmsAndSMS.isEmpty()) {
+                        strings= new String[mmsAndSMS.size()];
+                        for (int i = 0; i < mmsAndSMS.size(); i++) {
+                           String text = mmsAndSMS.get(i).getNumber() + "\n" + mmsAndSMS.get(i).getContent();
+                           System.err.println(text);
+                            strings[i] = text;
+                        }
+                    }
+                    ListView list = findViewById(R.id.list);
+
+                    list.setAdapter(new ArrayAdapter(MainActivity.this, android.R.layout.simple_list_item_1,strings));
+                    break;
+
+            }
+            super.handleMessage(msg);
+        }
+    };
+
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -43,21 +73,49 @@ public class MainActivity extends AppCompatActivity {
         ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.READ_SMS, Manifest.permission.RECEIVE_MMS, Manifest.permission.RECEIVE_MMS}, 1);
 
 
-        List<Msg> mmsAndSMS = getMMSAndSMS();
+findViewById(R.id.click).setOnClickListener(new View.OnClickListener() {
+    @Override
+    public void onClick(View v) {
 
-        ListView list = findViewById(R.id.list);
-        String[] strings = null;
-        if (mmsAndSMS != null && !mmsAndSMS.isEmpty()) {
-            strings= new String[mmsAndSMS.size()];
-            for (int i = 0; i < mmsAndSMS.size(); i++) {
-                strings[i] = mmsAndSMS.get(i).getNumber() + "\n" + mmsAndSMS.get(i).getContent();
+        new Thread(new Runnable() {
+            @Override
+            public synchronized void run() {
+                List<Msg> mmsAndSMS = getAllSMS();
+                Message message = new Message();
+                message.what = 1;
+                message.obj = mmsAndSMS;
+                handler.sendMessage(message);
             }
-        }
+        }).start();
+    }
+});
 
-        list.setAdapter(new ArrayAdapter(this, android.R.layout.simple_list_item_1,strings));
+
+
+
 
 
     }
+
+
+
+   private synchronized List<Msg>  getAllSMS() {
+        List<Msg> msgList = new ArrayList<>();
+        // 这个短信是SMS
+        Uri smsUri = Uri.parse("content://sms");
+        Cursor smsCursor = contentResolver.query(smsUri,null,null,null,null);
+        while (smsCursor != null && smsCursor.moveToNext()) {
+            String body = smsCursor.getString(smsCursor.getColumnIndex("body"));
+            String subject = smsCursor.getString(smsCursor.getColumnIndex("subject"));
+            String date = smsCursor.getString(smsCursor.getColumnIndex("date"));
+            String address = smsCursor.getString(smsCursor.getColumnIndex("address"));
+            String id = smsCursor.getString(smsCursor.getColumnIndex("_id"));
+            msgList.add(new Msg(false, id, address, subject, date, body, null));
+        }
+     if (smsCursor!=null) smsCursor.close();
+       return msgList;
+    }
+
 
 
     //反回所有短信
@@ -65,7 +123,7 @@ public class MainActivity extends AppCompatActivity {
         List<Msg> msgList = new ArrayList<>();
         final String[] projection = new String[]{"_id", "ct_t"};
         final String[] msgPro = new String[]{"*"};
-        Uri uri = Uri.parse("content://mms-sms/conversations/");
+        Uri uri = Uri.parse("content://sms");
         Cursor msgCursor = contentResolver.query(uri, projection, null, null, null);
         if (msgCursor != null) {
             if (msgCursor.moveToFirst()) {
