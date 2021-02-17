@@ -6,16 +6,17 @@
     android:layout_height="match_parent"
     android:orientation="vertical"
     tools:context=".MainActivity">
-    <Button
-        android:layout_width="wrap_content"
-        android:id="@+id/click"
-        android:text="点击获取短信"
-        android:layout_height="wrap_content"/>
-
 
     <ListView
         android:layout_width="match_parent"
         android:id="@+id/list"
+        android:layout_weight="1"
+        android:layout_height="0dp"/>
+
+    <Button
+        android:layout_width="wrap_content"
+        android:id="@+id/click"
+        android:text="点击获取短信"
         android:layout_height="wrap_content"/>
 
 </LinearLayout>
