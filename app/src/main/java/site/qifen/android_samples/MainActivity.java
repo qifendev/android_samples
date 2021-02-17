@@ -41,6 +41,11 @@ import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+
+/**
+ * 需要手动到设置 把有关app的短信权限都打开
+ */
+
 public class MainActivity extends AppCompatActivity {
     public ContentResolver contentResolver;
     int num = 0;
