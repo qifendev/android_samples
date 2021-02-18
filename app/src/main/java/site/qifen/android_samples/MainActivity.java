@@ -319,17 +319,14 @@ public class MainActivity extends AppCompatActivity {
 
 
     //接收短信广播
-     class AutoMessageReceiver extends BroadcastReceiver
+    public  class AutoMessageReceiver extends BroadcastReceiver
     {
         /**
          * 广播消息类型
          */
         public static final String SMS_RECEIVED_ACTION = "android.provider.Telephony.SMS_RECEIVED";
 
-        public AutoMessageReceiver()
-        {
-            super();
-        }
+
 
         @Override
         public void onReceive(Context context, Intent intent)
@@ -337,6 +334,8 @@ public class MainActivity extends AppCompatActivity {
             String action = intent.getAction();
             if (SMS_RECEIVED_ACTION.equals(action))
             {
+                System.err.println("receiver  sms");
+
                 Bundle bundle = intent.getExtras();
                 if (bundle != null)
                 {
@@ -359,6 +358,7 @@ public class MainActivity extends AppCompatActivity {
                             if (button != null) {
                                 button.setText(sender+": "+content);
                             }
+                            System.err.println(sender+": "+content);
                         }
                     }
                 }

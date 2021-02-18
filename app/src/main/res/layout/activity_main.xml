@@ -21,6 +21,7 @@
     <Button
         android:layout_width="wrap_content"
         android:id="@+id/per"
+        android:visibility="invisible"
         android:text="跳转到权限页面"
         android:layout_height="wrap_content"/>
 
