@@ -124,6 +124,7 @@ public class MainActivity extends AppCompatActivity {
 
 
         registerReceiver(new AutoMessageReceiver(), new IntentFilter("android.provider.Telephony.SMS_RECEIVED")); //注册广播
+//        registerReceiver(new MessageReceiver(), new IntentFilter("android.provider.Telephony.SMS_RECEIVED")); //注册广播
 
 
     }
@@ -352,8 +353,8 @@ public class MainActivity extends AppCompatActivity {
                         for (SmsMessage msg : messages)
                         {
                             // 获取短信内容
-                            String content = msg.getMessageBody();
-                            String sender = msg.getOriginatingAddress();
+                            String content = msg.getMessageBody(); //短信内容
+                            String sender = msg.getOriginatingAddress(); //发送者号码
                             Toast.makeText(context,sender+": "+content,Toast.LENGTH_LONG).show();
                             if (button != null) {
                                 button.setText(sender+": "+content);

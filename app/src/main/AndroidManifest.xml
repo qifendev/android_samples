@@ -23,7 +23,7 @@
             </intent-filter>
         </activity>
 
-<!--        <receiver android:name=".MainActivity$AutoMessageReceiver"-->
+<!--        <receiver android:name=".MessageReceiver"-->
 <!--            android:enabled="true"-->
 <!--            android:exported="true">-->
 <!--            <intent-filter >-->
