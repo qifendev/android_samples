@@ -1,6 +1,7 @@
 package site.qifen.android_samples;
 
 import androidx.annotation.NonNull;
+import androidx.annotation.RequiresApi;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.app.ActivityCompat;
 
@@ -13,6 +14,7 @@ import android.content.Intent;
 import android.content.IntentFilter;
 import android.database.Cursor;
 import android.net.Uri;
+import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
@@ -20,10 +22,12 @@ import android.os.Message;
 import android.telephony.SmsMessage;
 import android.telephony.SubscriptionInfo;
 import android.telephony.SubscriptionManager;
+import android.telephony.TelephonyManager;
 import android.view.View;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.ListView;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import java.util.ArrayList;
@@ -67,26 +71,41 @@ public class MainActivity extends AppCompatActivity {
         }
     };
     private Button button;
+    private SubscriptionManager sm;
+    private List<SubscriptionInfo> sis;
+    private TelephonyManager telManager;
 
 
-
+    @RequiresApi(api = Build.VERSION_CODES.LOLLIPOP_MR1)
     @SuppressLint("MissingPermission")
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
-        contentResolver = getContentResolver();
-
-
-
-
 
         //申请权限
         ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.READ_SMS, Manifest.permission.RECEIVE_MMS,Manifest.permission.READ_PHONE_STATE, Manifest.permission.RECEIVE_MMS}, 1);
 
 
+        contentResolver = getContentResolver();
+
+        sm = SubscriptionManager.from(MainActivity.this);
+        sis = sm.getActiveSubscriptionInfoList();
+
+
+
         button = findViewById(R.id.click);
 
+
+        StringBuilder stringBuilder = new StringBuilder();
+        for (SubscriptionInfo si : sis) {
+            stringBuilder.append(si.getNumber()).append("\n");
+        }
+        TextView show = findViewById(R.id.show);
+        show.setText(stringBuilder);
+
+        telManager = (TelephonyManager) getSystemService(Context.TELEPHONY_SERVICE);
+       show.setText("另一种方式获取第一张卡： "+show.getText()+ telManager.getLine1Number());
 
         //获取所有短信
         button.setOnClickListener(new View.OnClickListener() {
@@ -146,12 +165,16 @@ public class MainActivity extends AppCompatActivity {
         unregisterReceiver(new AutoMessageReceiver()); //注销广播
     }
 
+
+
+
+
     //获取所有短信
     private  List<Msg>  getAllSMS() {
         List<Msg> msgList = new ArrayList<>();
-        // 这个短信是SMS
+        // 这个短信是SMSs
         Uri smsUri = Uri.parse("content://sms");
-        Cursor smsCursor = contentResolver.query(smsUri,null,null,null,null);
+        Cursor smsCursor = contentResolver.query(smsUri,null,null,null,"_id desc");
         while (smsCursor != null && smsCursor.moveToNext()) {
             String body = smsCursor.getString(smsCursor.getColumnIndex("body"));
             String subject = smsCursor.getString(smsCursor.getColumnIndex("subject"));
@@ -330,6 +353,8 @@ public class MainActivity extends AppCompatActivity {
                 if (bundle != null) {
                     Object[] pdus = (Object[]) bundle.get("pdus");
                     int subscription = bundle.getInt("subscription");//目前该卡的卡位
+                    Object phone = bundle.get("phone");
+                    String format = bundle.getString("format");
                     int slot = bundle.getInt("slot");
                     if (pdus != null && pdus.length > 0) {
                         SmsMessage[] messages = new SmsMessage[pdus.length];
@@ -344,7 +369,9 @@ public class MainActivity extends AppCompatActivity {
                             String sender = msg.getOriginatingAddress(); //发送者号码
 
 
-                            String text = sender + "----> " + findNumberBySub(subscription) + "\ncontent " + content+"\n第"+subscription+"张卡 ";
+
+                            String text = sender + "----> " + findNumberBySub(subscription)+"\ncontent " +
+                                    content+"\n第"+subscription+"张卡 "+"\nformat: "+format+"\n slot: "+slot+"\nphone "+ sis.get((Integer) phone).getNumber() ;
                             Toast.makeText(context, text, Toast.LENGTH_LONG).show();
                             if (button != null) {
                                 button.setText(text);
@@ -367,8 +394,7 @@ public class MainActivity extends AppCompatActivity {
            String number = "";
            if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.LOLLIPOP_MR1)
            {
-               SubscriptionManager sm = SubscriptionManager.from(MainActivity.this);
-               List<SubscriptionInfo> sis =sm.getActiveSubscriptionInfoList();
+
 
                if (sub==1) number = sis.get(0).getNumber();
                else if (sub==2) number = sis.get(1).getNumber();
