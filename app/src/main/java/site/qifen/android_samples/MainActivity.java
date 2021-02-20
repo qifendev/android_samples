@@ -1,41 +1,31 @@
 package site.qifen.android_samples;
 
 import androidx.annotation.NonNull;
-import androidx.annotation.RequiresApi;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.app.ActivityCompat;
 
 import android.Manifest;
+import android.annotation.SuppressLint;
 import android.content.BroadcastReceiver;
 import android.content.ContentResolver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.database.Cursor;
-import android.graphics.Bitmap;
-import android.graphics.BitmapFactory;
 import android.net.Uri;
-import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
 import android.os.Message;
 import android.telephony.SmsMessage;
+import android.telephony.SubscriptionInfo;
+import android.telephony.SubscriptionManager;
 import android.view.View;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.ListView;
-import android.widget.SimpleAdapter;
-import android.widget.TextView;
 import android.widget.Toast;
 
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.nio.charset.Charset;
-import java.nio.charset.StandardCharsets;
-import java.text.MessageFormat;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.regex.Matcher;
@@ -79,6 +69,8 @@ public class MainActivity extends AppCompatActivity {
     private Button button;
 
 
+
+    @SuppressLint("MissingPermission")
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -90,7 +82,7 @@ public class MainActivity extends AppCompatActivity {
 
 
         //申请权限
-        ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.READ_SMS, Manifest.permission.RECEIVE_MMS, Manifest.permission.RECEIVE_MMS}, 1);
+        ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.READ_SMS, Manifest.permission.RECEIVE_MMS,Manifest.permission.READ_PHONE_STATE, Manifest.permission.RECEIVE_MMS}, 1);
 
 
         button = findViewById(R.id.click);
@@ -125,6 +117,11 @@ public class MainActivity extends AppCompatActivity {
 
         registerReceiver(new AutoMessageReceiver(), new IntentFilter("android.provider.Telephony.SMS_RECEIVED")); //注册广播
 //        registerReceiver(new MessageReceiver(), new IntentFilter("android.provider.Telephony.SMS_RECEIVED")); //注册广播
+
+
+
+
+
 
 
     }
@@ -315,68 +312,88 @@ public class MainActivity extends AppCompatActivity {
 //    }
 
 
-
-
-
-
     //接收短信广播
-    public  class AutoMessageReceiver extends BroadcastReceiver
-    {
+    public class AutoMessageReceiver extends BroadcastReceiver {
         /**
          * 广播消息类型
          */
         public static final String SMS_RECEIVED_ACTION = "android.provider.Telephony.SMS_RECEIVED";
 
 
-
         @Override
-        public void onReceive(Context context, Intent intent)
-        {
+        public void onReceive(Context context, Intent intent) {
             String action = intent.getAction();
-            if (SMS_RECEIVED_ACTION.equals(action))
-            {
+            if (SMS_RECEIVED_ACTION.equals(action)) {
                 System.err.println("receiver  sms");
 
                 Bundle bundle = intent.getExtras();
-                if (bundle != null)
-                {
-                    Object[] pdus = (Object[])bundle.get("pdus");
-                    if (pdus != null && pdus.length > 0)
-                    {
+                if (bundle != null) {
+                    Object[] pdus = (Object[]) bundle.get("pdus");
+                    int subscription = bundle.getInt("subscription");//目前该卡的卡位
+                    int slot = bundle.getInt("slot");
+                    if (pdus != null && pdus.length > 0) {
                         SmsMessage[] messages = new SmsMessage[pdus.length];
                         int length = messages.length;
-                        for (int i = 0; i < length; i++)
-                        {
-                            byte[] pdu = (byte[])pdus[i];
+                        for (int i = 0; i < length; i++) {
+                            byte[] pdu = (byte[]) pdus[i];
                             messages[i] = SmsMessage.createFromPdu(pdu);
                         }
-                        for (SmsMessage msg : messages)
-                        {
+                        for (SmsMessage msg : messages) {
                             // 获取短信内容
                             String content = msg.getMessageBody(); //短信内容
                             String sender = msg.getOriginatingAddress(); //发送者号码
-                            Toast.makeText(context,sender+": "+content,Toast.LENGTH_LONG).show();
+
+
+                            String text = sender + "----> " + findNumberBySub(subscription) + "\ncontent " + content+"\n第"+subscription+"张卡 ";
+                            Toast.makeText(context, text, Toast.LENGTH_LONG).show();
                             if (button != null) {
-                                button.setText(sender+": "+content);
+                                button.setText(text);
                             }
-                            System.err.println(sender+": "+content);
+                            System.err.println(text);
                         }
                     }
                 }
             }
         }
 
+
+        /**
+         * 根据卡槽获取手机号码
+         *
+         */
+
+       @SuppressLint({"MissingPermission", "HardwareIds"})
+       public String findNumberBySub(int sub){
+           String number = "";
+           if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.LOLLIPOP_MR1)
+           {
+               SubscriptionManager sm = SubscriptionManager.from(MainActivity.this);
+               List<SubscriptionInfo> sis =sm.getActiveSubscriptionInfoList();
+
+               if (sub==1) number = sis.get(0).getNumber();
+               else if (sub==2) number = sis.get(1).getNumber();
+
+               System.out.println("sub "+sub+" num: "+number);
+
+               // 获取SIM卡数量相关信息：
+//               int count = sm.getActiveSubscriptionInfoCount();//当前实际插卡数量
+//               int max   = sm.getActiveSubscriptionInfoCountMax();//当前卡槽数量
+           }
+
+           return number;
+        }
+
+
         /**
          * 截取数字
+         *
          * @param content
          * @return
          */
-        public String getNumbers(String content)
-        {
+        public String getNumbers(String content) {
             Pattern pattern = Pattern.compile("\\d+");
             Matcher matcher = pattern.matcher(content);
-            while (matcher.find())
-            {
+            while (matcher.find()) {
                 return matcher.group(0);
             }
             return "";
@@ -384,15 +401,14 @@ public class MainActivity extends AppCompatActivity {
 
         /**
          * <判断字符串是否是数字>
+         *
          * @param str
          * @return
          */
-        public  boolean isNumeric(String str)
-        {
+        public boolean isNumeric(String str) {
             Pattern pattern = Pattern.compile("[0-9]*");
             Matcher isNum = pattern.matcher(str);
-            if (!isNum.matches())
-            {
+            if (!isNum.matches()) {
                 return false;
             }
             return true;
