@@ -3,13 +3,9 @@ package site.qifen.android_samples;
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 
-import android.app.Activity;
 import android.content.ContentResolver;
 import android.content.ContentValues;
-import android.content.Intent;
-import android.media.MediaScannerConnection;
 import android.net.Uri;
-import android.os.Build;
 import android.os.Bundle;
 import android.os.Environment;
 import android.os.Handler;
@@ -18,31 +14,28 @@ import android.os.Message;
 import android.os.ParcelFileDescriptor;
 import android.provider.MediaStore;
 import android.text.TextUtils;
-import android.util.Log;
 import android.view.View;
 import android.widget.EditText;
-import android.widget.TextView;
 import android.widget.Toast;
 
 
 import com.google.android.gms.ads.AdRequest;
 import com.google.android.gms.ads.AdView;
 import com.google.android.gms.ads.MobileAds;
+import com.google.android.gms.ads.RequestConfiguration;
 import com.google.android.gms.ads.initialization.InitializationStatus;
 import com.google.android.gms.ads.initialization.OnInitializationCompleteListener;
 
 import java.io.File;
-import java.io.FileDescriptor;
-import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.OutputStream;
+import java.util.Arrays;
+import java.util.List;
 import java.util.UUID;
 
 import okhttp3.OkHttpClient;
 import okhttp3.Request;
-import okhttp3.ResponseBody;
 import retrofit2.Call;
 import retrofit2.Callback;
 import retrofit2.Response;
@@ -67,6 +60,8 @@ public class MainActivity extends AppCompatActivity {
 
 
     @Override
+
+
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
@@ -79,17 +74,25 @@ public class MainActivity extends AppCompatActivity {
 //        startActivity(it);
 
 
+
+
+
+
         MobileAds.initialize(this, new OnInitializationCompleteListener() { //初始化广告
             @Override
             public void onInitializationComplete(InitializationStatus initializationStatus) {
-
+//                List<String> testDeviceIds = Arrays.asList("A86C4089EB9C9E707CE22137D45B901A");
+//                RequestConfiguration configuration =
+//                        new RequestConfiguration.Builder().setTestDeviceIds(testDeviceIds).build();
+//                MobileAds.setRequestConfiguration(configuration);
+                AdView adView = findViewById(R.id.adView);
+                AdRequest adRequest = new AdRequest.Builder().build();
+                adView.loadAd(adRequest); //请求广告
             }
         });
 
 
-        AdView adView = findViewById(R.id.adView);
-        AdRequest adRequest = new AdRequest.Builder().build();
-        adView.loadAd(adRequest); //请求广告
+
 
 
         EditText url = findViewById(R.id.url);
@@ -137,63 +140,39 @@ public class MainActivity extends AppCompatActivity {
 
                                                 try {
 
-
-                                                    File filesDir = getExternalFilesDir(Environment.DIRECTORY_DCIM);
-
+//                                                    byte[] bytes = response.body().bytes();
 
 
+//                                                    File filesDir = getExternalFilesDir(Environment.DIRECTORY_MOVIES);
+//
                                                     String fileName = UUID.randomUUID() + ".mp4";
-
-                                                    File file = new File(filesDir.getAbsoluteFile() + File.separator + fileName);
-
-                                                    System.out.println("path： "+file.getAbsolutePath());
 //
+//                                                    File file = new File(filesDir.getAbsoluteFile() + File.separator + fileName);
 //
-                                                    FileOutputStream outputStream = new FileOutputStream(file);
+//                                                    System.out.println("path： " + file.getAbsolutePath());
+////
+////
+//                                                    FileOutputStream outputStream = new FileOutputStream(file);
+//
+//                                                    outputStream.write(bytes);
 
-                                                    outputStream.write(response.body().bytes());
+
+                                                    String s = savePhoto(fileName, data.getTitle(), "video/mp4", "Movies/mov/", response.body().byteStream());
 
 
                                                     handler.sendEmptyMessage(1); //完成
 
 
-//                                                    ContentResolver resolver = getApplicationContext()
-//                                                            .getContentResolver();
-//
-//
-//                                                    Uri audioCollection = MediaStore.Video.Media.getContentUri(
-//                                                            MediaStore.VOLUME_EXTERNAL_PRIMARY);
-//
-//                                                    ContentValues newSongDetails = new ContentValues();
-//                                                    newSongDetails.put(MediaStore.Video.Media.DISPLAY_NAME,
-//                                                            fileName);
-//
-//                                                    Uri myFavoriteSongUri = resolver
-//                                                            .insert(audioCollection, newSongDetails);
-//
-//
+//                                                    ContentValues values = new ContentValues();
+//                                                    values.put(MediaStore.Video.Media.DISPLAY_NAME, UUID.randomUUID() + ".mp4");
+//                                                    values.put(MediaStore.Video.Media.MIME_TYPE, "video/mp4");
+//                                                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+//                                                        values.put(MediaStore.Video.Media.RELATIVE_PATH, file.getAbsolutePath());
+//                                                    }
+//                                                    Uri insert = getContentResolver().insert(MediaStore.Video.Media.EXTERNAL_CONTENT_URI, values);
 
 
-
-
-                                                    ContentValues values = new ContentValues();
-                                                    values.put(MediaStore.Video.Media.DISPLAY_NAME,  UUID.randomUUID() + ".mp4");
-                                                    values.put(MediaStore.Video.Media.MIME_TYPE, "video/mp4");
-                                                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-                                                        values.put(MediaStore.Video.Media.RELATIVE_PATH, file.getAbsolutePath());
-                                                    }
-
-                                                    Uri insert = getContentResolver().insert(MediaStore.Video.Media.EXTERNAL_CONTENT_URI, values);
-
-
-
-
-
-                                                    System.out.println("uri:  " + insert);
-
-
-
-
+//                                                    System.out.println("uri:  " + insert);
 
 
                                                 } catch (Exception e) {
@@ -228,17 +207,45 @@ public class MainActivity extends AppCompatActivity {
     }
 
 
-    private void refreshApi29(String fileNamePath) {
-        //刷新相册，mineTypes为null的话让系统自己根据文件后缀判断文件类型
-        MediaScannerConnection.scanFile(this, new String[]{fileNamePath}, new String[]{"video/mp4"}, (path, uri) -> Log.e("资源刷新成功路径为", path));
-        //代表只刷新视频格式为mp4类型其它格式视频文件不刷新
-//                MediaScannerConnection.scanFile(activity, new String[]{fileNamePath}, new String[]{"video/mp4"}, (path, uri) -> Log.e("资源刷新成功路径为", path));
-        //代表刷新视频文件，只要是视频都刷新根据当前Android系统支持哪些视频格式进行刷新
-//                MediaScannerConnection.scanFile(activity, new String[]{fileNamePath}, new String[]{"video/*"}, (path, uri) -> Log.e("资源刷新成功路径为", path));
-        //代表只刷新图片格式为jpg的文件到相册中
-//                MediaScannerConnection.scanFile(activity, new String[]{fileNamePath}, new String[]{"image/jpg"}, (path, uri) -> Log.e("资源刷新成功路径为", path));
-        //代表刷新图片到相册只要是图片就会刷新
-//                MediaScannerConnection.scanFile(activity, new String[]{fileNamePath}, new String[]{"image/*"}, (path, uri) -> Log.e("资源刷新成功路径为", path));
+    private String savePhoto(String name, String description, String mime, String path, InputStream inputStream) {
+        if (path.startsWith("/")) {
+            return null;
+        }
+        ContentValues values = new ContentValues();
+        values.put(MediaStore.Video.Media.DISPLAY_NAME, name);
+        values.put(MediaStore.Video.Media.MIME_TYPE, mime);
+        values.put(MediaStore.Video.Media.DESCRIPTION, description);
+        values.put(MediaStore.Video.Media.RELATIVE_PATH, path);
+
+        Uri url = null;
+        String stringUri = null;
+        ContentResolver cr = getContentResolver();
+        try {
+            url = cr.insert(MediaStore.Video.Media.EXTERNAL_CONTENT_URI, values);
+            if (url == null) {
+                return null;
+            }
+            byte[] buffer = new byte[1024];
+            ParcelFileDescriptor descriptor = cr.openFileDescriptor(url, "w");
+            FileOutputStream outputStream = new FileOutputStream(descriptor.getFileDescriptor());
+            while (true) {
+                int readSize = inputStream.read(buffer);
+                if (readSize == -1) {
+                    break;
+                }
+                outputStream.write(buffer, 0, readSize);
+            }
+            outputStream.flush();
+        } catch (Exception e) {
+            e.printStackTrace();
+            if (url != null) {
+                cr.delete(url, null, null);
+            }
+        }
+        if (url != null) {
+            stringUri = url.toString();
+        }
+        return stringUri;
     }
 
 
